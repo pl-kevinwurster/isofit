@@ -1,0 +1,130 @@
+# Test a package built and installed by pip.
+#
+# Test ISOFIT on a variety of versions of Python. This test suite is likely
+# sufficient for broadly testing the 'pip' package, with the assumption that
+# users are able to get all dependencies installed. Any further testing should
+# be for a specific environment, and be very targeted. For example, testing
+# Ubuntu 22.04 package ecosystem should be done by building a deb for ISOFIT,
+# and testing against the Python packages provided by the apt package repo.
+#
+# Readers looking at this file for the purposes of installing ISOFIT on their
+# system should be aware that these tests run inside a virtual environment.
+# Be aware that both 'pip' and 'apt/apt-get' can both be used to install Python
+# packages, but pip installing something with Ubuntu's system Python will
+# conflict with packages installed via 'apt/apt-get', and produce an environment
+# that is difficult to unwind.
+
+name: Test Pip Package
+
+on: [pull_request]
+
+jobs:
+
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Python 3.12 cannot be tested until Ray provides support:
+        #   https://github.com/ray-project/ray/issues/40211
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        pytest-flags: ["-k 'not cli'", ""]
+
+    steps:
+
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install ISOFIT and most software dependencies
+        run: |
+
+          set -eox errexit
+
+          python3 --version
+
+          # The current GDAL install situation is difficult, and easiest to
+          # solve with an older version of 'pip'. There is an interest in
+          # eliminating GDAL as a project dependency, which would simplify this
+          # situation. Unclear if these version requirements can be loosened,
+          # or if they need to be further constrained!
+          python3 -m pip install "pip<23" "setuptools<61" --upgrade
+          python3 -m pip --version
+          python3 -m pip show setuptools
+
+          # Install GDAL from the upstream Ubuntu package repository. Note that
+          # 'libgdal-dev' provides the '$ gdal-config' executable, which we
+          # need to install the GDAL Python bindings.
+          sudo apt-get install gdal-bin libgdal-dev
+
+          # Install Numpy before GDAL, otherwise GDAL does not properly compile.
+          # GDAL does not provide a mechanism for turning this into a
+          # compile-time error.
+          python3 -m pip install numpy
+          
+          # Having problems installing GDAL? Try falling back to the most recent
+          # release for the previous major version of 'pip', and possibly
+          # 'setuptools'. As of this writing, GDAL uses a 'setup.py', and cannot
+          # build a wheel. The Python packaging ecosystem is in transition, and
+          # 'pip' is beginning to deprecate support for 'setup.py'. GDAL does
+          # not yet support the new future. Given that the underlying GDAL
+          # libraries are coming from the upstream Ubuntu package repository,
+          # this should continue to work until either:
+          #   1. A new version of '$ pip' is released that fully drops support
+          #      for the way the GDAL PyPI package is built. This is the most
+          #      likely disruption.
+          #   2. A new version of Ubuntu is released with an updated version of
+          #      GDAL that forces a new version of the Python package to be
+          #      installed. If this package has different build machinery this
+          #      command may not work.
+          #
+          # Keep in mind that for the purposes of the CI system, the goal is
+          # just to get ANY compliant version of GDAL installed. Users may have
+          # to do some work to get GDAL installed on their own system, and that
+          # is OK.
+          #
+          # Manually install GDAL to match the version we get from the upstream
+          # Ubuntu package repository. '$ pip' is in a weird place right now
+          # as it transitions to dropping support for 'setup.py'. This command
+          # works, but will likely need to be on future versions of Ubuntu, or
+          # if GDAL is installed from source. Especially if GDAL adopts a
+          # 'pyproject.toml'.
+          python3 -m pip install \
+            --no-build-isolation \
+            --no-binary gdal \
+            setuptools \
+            "gdal==$(gdal-config --version)"
+
+          # ISOFIT and its dependencies
+          python3 -m pip install .
+
+      - name: Download and build 6S
+        run: |
+
+          # Try and only download and build 6S when we know we are executing
+          # tests requiring this library, but eventually this will need to be
+          adjusted.
+          if [ ${{ matrix.pytest-flags }} != "" ]; then
+            ./download-and-build-6s.sh
+          fi
+
+      - name: Install ISOFIT data dependencies
+        run: |
+
+          # Try and only download when we know we are executing tests requiring
+          # this file, but eventually this will need to be adjusted.
+          if [ ${{ matrix.pytest-flags }} != "" ]; then
+            ./download-and-unpack-sRTMnet.sh
+          fi
+
+      - name: Execute tests
+        run: |
+
+          EMULATOR_PATH="sRTMnet_v100/sRTMnet_v100/" \
+          SIXS_DIR="6sv-2.1/"
+          python3 -m pytest \
+            ${{ matrix.pytest-flags }}
