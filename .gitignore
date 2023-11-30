@@ -39,3 +39,9 @@ docs/html/_sources/
 
 # Ignore local testing directories
 local/
+
+# Additional local dependencies
+6sv-2.1/
+
+# Data dependencies
+sRTMnet_v100/
