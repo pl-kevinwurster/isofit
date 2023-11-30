@@ -39,11 +39,11 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
       - name: Install ISOFIT and most software dependencies
+        shell: bash
         run: |
-
-          set -eox errexit
 
           python3 --version
 
@@ -51,8 +51,12 @@ jobs:
           # solve with an older version of 'pip'. There is an interest in
           # eliminating GDAL as a project dependency, which would simplify this
           # situation. Unclear if these version requirements can be loosened,
-          # or if they need to be further constrained!
-          python3 -m pip install "pip<23" "setuptools<61" --upgrade
+          # or if they need to be further constrained. The 'wheel' package
+          # is not required, but bridges the gap for some packages that have
+          # not yet moved to 'pyproject.toml', and should make this portion of
+          # the CI process more robust. The 'utm' package falls in this
+          # category.
+          python3 -m pip install "pip<23" "setuptools<61" wheel --upgrade
           python3 -m pip --version
           python3 -m pip show setuptools
 
@@ -103,28 +107,27 @@ jobs:
           python3 -m pip install .
 
       - name: Download and build 6S
+        if: ${{ matrix.pytest-flags == '' }}
+        shell: bash
         run: |
-
-          # Try and only download and build 6S when we know we are executing
-          # tests requiring this library, but eventually this will need to be
-          adjusted.
-          if [ ${{ matrix.pytest-flags }} != "" ]; then
-            ./download-and-build-6s.sh
-          fi
+          # Could cache this: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows
+          ./download-and-build-6s.sh
 
       - name: Install ISOFIT data dependencies
+        if: ${{ matrix.pytest-flags == '' }}
+        shell: bash
         run: |
-
-          # Try and only download when we know we are executing tests requiring
-          # this file, but eventually this will need to be adjusted.
-          if [ ${{ matrix.pytest-flags }} != "" ]; then
-            ./download-and-unpack-sRTMnet.sh
-          fi
+          # Could cache this: https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows
+          ./download-and-unpack-sRTMnet.sh
 
       - name: Execute tests
+        shell: bash
         run: |
 
-          EMULATOR_PATH="sRTMnet_v100/sRTMnet_v100/" \
-          SIXS_DIR="6sv-2.1/"
-          python3 -m pytest \
-            ${{ matrix.pytest-flags }}
+          # Use absolute file paths for environment variables. Note that
+          # 'EMULATOR_PATH' is not actually a filepath, so have to be a bit
+          # more clever.
+
+          EMULATOR_PATH="$(pwd)/sRTMnet_v100/sRTMnet_v100" \
+          SIXS_DIR=$(realpath "6sv-2.1") \
+          python3 -m pytest ${{ matrix.pytest-flags }}
