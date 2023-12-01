@@ -20,10 +20,10 @@ fi
 
 
 # Download sRTMnet file
-mkdir "$SRTMNET_DIR"
+mkdir "${SRTMNET_DIR}"
 wget \
   --no-verbose \
-  --directory-prefix "$SRTMNET_DIR" \
+  --directory-prefix "${SRTMNET_DIR}" \
   "https://zenodo.org/record/4096627/files/${SRTMNET_FILENAME}"
 
 
@@ -31,5 +31,6 @@ wget \
   cd "${SRTMNET_DIR}"
   unzip "${SRTMNET_DIR}"
   rm -rf "__MACOSX"
+  rm -f .DS_Store sRTMnet_v100/.DS_Store
   rm "${SRTMNET_FILENAME}"
 )

@@ -18,4 +18,4 @@ tar -xf 6sv-2.1.tar
 cp Makefile Makefile.bak
 sed -i -e 's/FFLAGS.*/& -std=legacy/' Makefile
 
-make
+make -j "$(nproc)"

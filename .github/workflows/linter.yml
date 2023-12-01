@@ -1,0 +1,43 @@
+# Run various linters
+
+name: Linter
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+
+  linter:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v2
+
+      - name: Linter
+        shell: bash
+        run: |
+
+          # Create Python virtual environment
+          rm -rf venv
+          python3 -m venv venv
+
+          # Activate virtual environment
+          source venv/bin/activate
+          if [ "${VIRTUAL_ENV}" == "" ]; then
+            echo "ERROR: Did not activate virtual environment"
+            exit 1
+          fi
+
+          # Install dependencies
+          python3 -m pip install black isort
+
+          # Lint!
+          ./run-linter.sh

@@ -16,7 +16,12 @@
 
 name: Test Pip Package
 
-on: [pull_request]
+# !! This is wrong !!
+on:
+  push:
+    branches: ["dev", "main"]
+  pull_request:
+    branches: ["dev", "main"]
 
 jobs:
 
@@ -45,66 +50,35 @@ jobs:
         shell: bash
         run: |
 
+          ######################################################################
+          # Non-Python Dependencies
+
+          # Install the core GDAL library from the upstream Ubuntu package
+          # repository. Note that 'libgdal-dev' provides the '$ gdal-config'
+          # executable, which we need to install the GDAL Python bindings.
+          sudo apt-get install python3 gdal-bin libgdal-dev
+
+
+          ######################################################################
+          # Python Packaging Dependencies
+
+          # Having 'wheel' triggers a bunch of new Python packaging machinery
+          # that will eventually become the default.
+          python3 -m pip install pip setuptools wheel --upgrade
           python3 --version
+          python3 -m pip show pip setuptools wheel
 
-          # The current GDAL install situation is difficult, and easiest to
-          # solve with an older version of 'pip'. There is an interest in
-          # eliminating GDAL as a project dependency, which would simplify this
-          # situation. Unclear if these version requirements can be loosened,
-          # or if they need to be further constrained. The 'wheel' package
-          # is not required, but bridges the gap for some packages that have
-          # not yet moved to 'pyproject.toml', and should make this portion of
-          # the CI process more robust. The 'utm' package falls in this
-          # category.
-          python3 -m pip install "pip<23" "setuptools<61" wheel --upgrade
-          python3 -m pip --version
-          python3 -m pip show setuptools
 
-          # Install GDAL from the upstream Ubuntu package repository. Note that
-          # 'libgdal-dev' provides the '$ gdal-config' executable, which we
-          # need to install the GDAL Python bindings.
-          sudo apt-get install gdal-bin libgdal-dev
+          ######################################################################
+          # Python 'gdal' Package
 
-          # Install Numpy before GDAL, otherwise GDAL does not properly compile.
-          # GDAL does not provide a mechanism for turning this into a
-          # compile-time error.
-          python3 -m pip install numpy
-          
-          # Having problems installing GDAL? Try falling back to the most recent
-          # release for the previous major version of 'pip', and possibly
-          # 'setuptools'. As of this writing, GDAL uses a 'setup.py', and cannot
-          # build a wheel. The Python packaging ecosystem is in transition, and
-          # 'pip' is beginning to deprecate support for 'setup.py'. GDAL does
-          # not yet support the new future. Given that the underlying GDAL
-          # libraries are coming from the upstream Ubuntu package repository,
-          # this should continue to work until either:
-          #   1. A new version of '$ pip' is released that fully drops support
-          #      for the way the GDAL PyPI package is built. This is the most
-          #      likely disruption.
-          #   2. A new version of Ubuntu is released with an updated version of
-          #      GDAL that forces a new version of the Python package to be
-          #      installed. If this package has different build machinery this
-          #      command may not work.
-          #
-          # Keep in mind that for the purposes of the CI system, the goal is
-          # just to get ANY compliant version of GDAL installed. Users may have
-          # to do some work to get GDAL installed on their own system, and that
-          # is OK.
-          #
-          # Manually install GDAL to match the version we get from the upstream
-          # Ubuntu package repository. '$ pip' is in a weird place right now
-          # as it transitions to dropping support for 'setup.py'. This command
-          # works, but will likely need to be on future versions of Ubuntu, or
-          # if GDAL is installed from source. Especially if GDAL adopts a
-          # 'pyproject.toml'.
-          python3 -m pip install \
-            --no-build-isolation \
-            --no-binary gdal \
-            setuptools \
-            "gdal==$(gdal-config --version)"
+          .github/workflows/install-python-gdal.sh
 
-          # ISOFIT and its dependencies
-          python3 -m pip install .
+
+          ######################################################################
+          # Install 'isofit'
+
+          python3 -m pip install ".[test]"
 
       - name: Download and build 6S
         if: ${{ matrix.pytest-flags == '' }}
@@ -123,11 +97,4 @@ jobs:
       - name: Execute tests
         shell: bash
         run: |
-
-          # Use absolute file paths for environment variables. Note that
-          # 'EMULATOR_PATH' is not actually a filepath, so have to be a bit
-          # more clever.
-
-          EMULATOR_PATH="$(pwd)/sRTMnet_v100/sRTMnet_v100" \
-          SIXS_DIR=$(realpath "6sv-2.1") \
-          python3 -m pytest ${{ matrix.pytest-flags }}
+          ./run-tests.sh ${{ matrix.pytest-flags }}
