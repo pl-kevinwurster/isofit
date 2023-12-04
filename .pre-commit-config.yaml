@@ -1,11 +1,19 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
-# Only apply to the isofit/ directory
+
 repos:
+
   - repo: local
     hooks:
-        - id: Linter
-          name: Linter
-          entry: ./run-linter.sh
-          language: system
-          pass_filenames: false
+
+      - id: black
+        name: black
+        entry: black isofit/
+        language: system
+        pass_filenames: false
+
+      - id: isort
+        name: isort
+        entry: isort isofit/
+        language: system
+        pass_filenames: false

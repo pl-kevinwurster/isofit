@@ -22,9 +22,7 @@ import logging
 import time
 from typing import List
 
-import matplotlib
 import numpy as np
-import pylab as plt
 from scipy.linalg import inv
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import KDTree
@@ -35,8 +33,6 @@ from isofit.configs import configs
 from isofit.core.common import envi_header
 from isofit.core.fileio import write_bil_chunk
 from isofit.core.instrument import Instrument
-
-plt.switch_backend("Agg")
 
 
 @ray.remote

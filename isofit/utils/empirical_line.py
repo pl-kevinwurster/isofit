@@ -22,9 +22,7 @@ import atexit
 import logging
 import time
 
-import matplotlib
 import numpy as np
-import pylab as plt
 from scipy.linalg import inv
 from scipy.spatial import KDTree
 from spectral.io import envi
@@ -34,8 +32,6 @@ from isofit.configs import configs
 from isofit.core.common import envi_header
 from isofit.core.fileio import write_bil_chunk
 from isofit.core.instrument import Instrument
-
-plt.switch_backend("Agg")
 
 
 @ray.remote
@@ -354,6 +350,11 @@ def _run_chunk(
 
 def _plot_example(xv, yv, b):
     """Plot for debugging purposes."""
+
+    import matplotlib
+    import pylab as plt
+
+    plt.switch_backend("Agg")
 
     matplotlib.rcParams["font.family"] = "serif"
     matplotlib.rcParams["font.sans-serif"] = "Times"

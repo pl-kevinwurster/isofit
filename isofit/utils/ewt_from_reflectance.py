@@ -27,7 +27,6 @@ from types import SimpleNamespace
 import click
 import numpy as np
 import ray
-from matplotlib import pyplot as plt
 from osgeo import gdal
 from spectral.io import envi
 
@@ -127,6 +126,8 @@ def main(args: SimpleNamespace) -> None:
     )
 
     if args.plot_map:
+        from matplotlib import pyplot as plt
+
         ewt = envi.open(args.output_cwc_file + ".hdr")
         plt.figure()
         plt.imshow(ewt[:, :] * 10, vmin=0, vmax=args.ewt_limit * 10, cmap="jet")
