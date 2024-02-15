@@ -1,5 +1,15 @@
 #!/bin/bash
 
+
+# Run selected examples.
+
+
+set -x
+set -o errexit
+set -o pipefail
+set -o nounset
+
+
 # shellcheck disable=SC2164
 # run 20151026_SantaMonica example
 cd examples/20151026_SantaMonica
@@ -12,7 +22,7 @@ python run_topoflux_example.py
 
 # run 20190806_ThermalIR example
 cd examples/20190806_ThermalIR
-python run_example_modtran_one.p
+python run_example_modtran_one.py
 
 # run profiling_cube/small example
 cd examples/profiling_cube
