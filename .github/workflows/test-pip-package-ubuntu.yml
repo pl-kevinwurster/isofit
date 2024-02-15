@@ -82,3 +82,8 @@ jobs:
         shell: bash
         run: |
           ./run-tests.sh ${{ matrix.pytest-flags }}
+
+      - name: Run examples
+        shell: bash
+        run: |
+          ./run-examples.sh
