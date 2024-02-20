@@ -86,6 +86,13 @@ class RadiativeTransferEngineConfig(BaseConfigSection):
         implementation of the forward model.
         """
 
+        self._glint_model_type = bool
+        self.glint_model = False
+        """
+        Flag to indicate whether to use the sun and sky glint model from Gege (2012, 2014) in the forward model. 
+        Only currently functional with multipart MODTRAN.
+        """
+
         self._lut_names_type = dict()
         self.lut_names = None
         """Dictionary: Names of the elements to run this radiative transfer element on.  Must be a subset

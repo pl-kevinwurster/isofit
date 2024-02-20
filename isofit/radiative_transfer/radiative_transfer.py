@@ -107,6 +107,7 @@ class RadiativeTransfer:
 
         # If any engine is true, self is true
         self.topography_model = any([rte.topography_model for rte in self.rt_engines])
+        self.glint_model = any([rte.glint_model for rte in self.rt_engines])
 
         # The rest of the code relies on sorted order of the individual RT engines which cannot
         # be guaranteed by the dict JSON or YAML input
@@ -167,7 +168,7 @@ class RadiativeTransfer:
             if "coszen" in child.lut:
                 return child.lut.coszen.data
 
-    def calc_rdn(self, x_RT, rfl, Ls, geom):
+    def calc_rdn(self, x_RT, x_surface, rfl, Ls, geom):
         r = self.get_shared_rtm_quantities(x_RT, geom)
         L_atm = self.get_L_atm(x_RT, geom)
         L_up = Ls * (r["transm_up_dir"] + r["transm_up_dif"])
@@ -284,7 +285,9 @@ class RadiativeTransfer:
                 L_downs.append(rdn)
         return np.hstack(L_downs)
 
-    def drdn_dRT(self, x_RT, rfl, drfl_dsurface, Ls, dLs_dsurface, geom: Geometry):
+    def drdn_dRT(
+        self, x_RT, x_surface, rfl, drfl_dsurface, Ls, dLs_dsurface, geom: Geometry
+    ):
         # first the rdn at the current state vector
         rdn = self.calc_rdn(x_RT, x_surface, rfl, Ls, geom)
 
